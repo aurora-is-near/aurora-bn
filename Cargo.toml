@@ -1,7 +1,10 @@
 [package]
-name = "bn"
-version = "0.4.3"
-authors = ["Sean Bowe <ewillbefull@gmail.com>"]
+name = "aurora-bn"
+version = "0.1.0"
+authors = [
+    "Sean Bowe <ewillbefull@gmail.com>",
+    "NEAR Inc <hello@near.org>"
+]
 description = "Pairing cryptography with the Barreto-Naehrig curve"
 keywords = ["pairing","crypto","cryptography"]
 readme = "README.md"
