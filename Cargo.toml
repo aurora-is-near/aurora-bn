@@ -8,19 +8,19 @@ authors = [
 description = "Pairing cryptography with the Barreto-Naehrig curve"
 keywords = ["pairing","crypto","cryptography"]
 readme = "README.md"
-homepage = "https://github.com/zcash/bn"
-repository = "https://github.com/zcash/bn"
+homepage = "https://github.com/aurora-is-near/aurora-bn"
+repository = "https://github.com/aurora-is-near/aurora-bn"
 license = "MIT OR Apache-2.0"
+edition = "2018"
 
 [[bench]]
 name = "api"
 
 [dependencies]
-rand = "~0.3.14"
-rustc-serialize = "~0.3.19"
-byteorder = "~0.5.3"
+byteorder = "~1.3.4"
+rand = "~0.8.3"
+serde = { version = "~1.0.125", no-default-features = true, features = ["derive"] }
 
-[dev-dependencies.bincode]
-version = "~0.6.0"
-default-features = false
-features = ["rustc-serialize"]
+[dev-dependencies]
+hex = "0.4"
+bincode = { version = "1.3.2", default-features = false }

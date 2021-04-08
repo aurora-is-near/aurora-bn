@@ -1,6 +1,4 @@
-extern crate bn;
-extern crate rand;
-use bn::{Group, Fr, G1, G2, pairing};
+use aurora_bn::{pairing, Fr, Group, G1, G2};
 
 fn main() {
     let rng = &mut rand::thread_rng();
