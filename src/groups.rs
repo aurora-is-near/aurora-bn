@@ -40,6 +40,43 @@ pub trait GroupParams: Sized + 'static {
     }
 }
 
+#[derive(Debug)]
+pub enum AffineGError {
+    NotOnCurve,
+    NotInSubgroup,
+}
+
+impl fmt::Display for AffineGError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        use AffineGError::*;
+        match self {
+            NotOnCurve => write!(f, "point not on the curve"),
+            NotInSubgroup => write!(f, "point not in the subgroup"),
+        }
+    }
+}
+
+fn check_points<P: GroupParams>(x: P::Base, y: P::Base) -> Result<AffineG<P>, AffineGError> {
+    // y^2 = x^3 + b
+    if y.squared() == (x.squared() * x) + P::coeff_b() {
+        if P::check_order() {
+            let p: G<P> = G {
+                x,
+                y,
+                z: P::Base::one(),
+            };
+
+            if (p * (-Fr::one())) + p != G::zero() {
+                return Err(AffineGError::NotInSubgroup);
+            }
+        }
+
+        Ok(AffineG { x, y })
+    } else {
+        Err(AffineGError::NotInSubgroup)
+    }
+}
+
 #[repr(C)]
 pub struct G<P: GroupParams> {
     x: P::Base,
@@ -51,6 +88,20 @@ pub struct G<P: GroupParams> {
 pub struct AffineG<P: GroupParams> {
     x: P::Base,
     y: P::Base,
+}
+
+impl<P: GroupParams> AffineG<P> {
+    pub fn new(x: P::Base, y: P::Base) -> Result<Self, AffineGError> {
+        check_points(x, y)
+    }
+
+    pub fn x(&self) -> &P::Base {
+        &self.x
+    }
+
+    pub fn y(&self) -> &P::Base {
+        &self.y
+    }
 }
 
 impl<P: GroupParams> PartialEq for AffineG<P> {
@@ -230,26 +281,6 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
     where
         D: Deserializer<'de>,
     {
-        fn check_points<P: GroupParams>(x: P::Base, y: P::Base) -> Result<AffineG<P>, String> {
-            // y^2 = x^3 + b
-            if y.squared() == (x.squared() * x) + P::coeff_b() {
-                if P::check_order() {
-                    let p: G<P> = G {
-                        x,
-                        y,
-                        z: P::Base::one(),
-                    };
-
-                    if (p * (-Fr::one())) + p != G::zero() {
-                        return Err("point is not in the subgroup".to_string());
-                    }
-                }
-
-                Ok(AffineG { x, y })
-            } else {
-                Err("point is not on the curve".to_string())
-            }
-        }
 
         #[derive(serde::Deserialize)]
         #[serde(field_identifier, rename_all = "lowercase")]
@@ -466,6 +497,7 @@ impl<P: GroupParams> Sub<G<P>> for G<P> {
     }
 }
 
+#[derive(Debug)]
 pub struct G1Params;
 
 impl GroupParams for G1Params {
@@ -499,6 +531,8 @@ impl GroupParams for G1Params {
 }
 
 pub type G1 = G<G1Params>;
+
+pub type AffineG1 = AffineG<G1Params>;
 
 pub struct G2Params;
 

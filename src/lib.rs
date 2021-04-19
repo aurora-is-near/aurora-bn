@@ -21,6 +21,7 @@ use core::{
 };
 use rand::Rng;
 pub use crate::fields::FieldError;
+pub use crate::groups::AffineGError;
 
 #[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
@@ -199,6 +200,34 @@ pub trait Group:
     fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
     fn normalize(&mut self);
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(C)]
+pub struct AffineG1(groups::AffineG1);
+
+impl AffineG1 {
+    pub fn new(x: Fq, y: Fq) -> Result<Self, AffineGError> {
+        Ok(AffineG1(groups::AffineG1::new(x.0, y.0)?))
+    }
+
+    pub fn x(&self) -> Fq {
+        Fq(*self.0.x())
+    }
+
+    pub fn y(&self) -> Fq {
+        Fq(*self.0.y())
+    }
+
+    pub fn from_jacobian(g1: G1) -> Option<Self> {
+        g1.0.to_affine().map(AffineG1)
+    }
+}
+
+impl From<AffineG1> for G1 {
+    fn from(affine: AffineG1) -> Self {
+        G1(affine.0.to_jacobian())
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
