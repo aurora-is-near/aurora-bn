@@ -1,10 +1,13 @@
 use crate::arith::U256;
-use crate::fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr};
-use rand::Rng;
+use crate::fields::{const_fq, FieldElement, Fq, Fq12, Fq2, Fr};
+use rand::{Rng};
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
-#[cfg(test)]
-use std::str::FromStr;
+use serde::{Serializer, Deserializer};
+use serde::ser::{SerializeTuple, SerializeStruct};
+use serde::de::{Error, SeqAccess, MapAccess};
+use std::fmt::Formatter;
+use std::marker::PhantomData;
 
 pub trait GroupElement:
     Sized
@@ -26,7 +29,7 @@ pub trait GroupElement:
 }
 
 pub trait GroupParams: Sized + 'static {
-    type Base: FieldElement + serde::Serialize + serde::Deserialize<'static>;
+    type Base: FieldElement + serde::Serialize + serde::de::DeserializeOwned;
 
     fn name() -> &'static str;
     fn one() -> G<Self>;
@@ -36,7 +39,6 @@ pub trait GroupParams: Sized + 'static {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
 #[repr(C)]
 pub struct G<P: GroupParams> {
     x: P::Base,
@@ -44,6 +46,7 @@ pub struct G<P: GroupParams> {
     z: P::Base,
 }
 
+#[derive(Debug)]
 pub struct AffineG<P: GroupParams> {
     x: P::Base,
     y: P::Base,
@@ -144,69 +147,165 @@ impl<P: GroupParams> AffineG<P> {
     }
 }
 
-// impl<P: GroupParams> Encodable for G<P> {
-//     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-//         if self.is_zero() {
-//             let l: u8 = 0;
-//             l.encode(s)
-//         } else {
-//             let l: u8 = 4;
-//             l.encode(s)?;
-//             self.to_affine().unwrap().encode(s)
-//         }
-//     }
-// }
-//
-// impl<P: GroupParams> Encodable for AffineG<P> {
-//     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-//         self.x.encode(s)?;
-//         self.y.encode(s)?;
-//
-//         Ok(())
-//     }
-// }
+impl<P: GroupParams> serde::Serialize for G<P> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
+        S: Serializer {
+        if self.is_zero() {
+            let l: u8 = 0;
+            serializer.serialize_u8(l)
+        } else {
+            let l: u8 = 4;
+            let mut tup = serializer.serialize_tuple(2)?;
+            tup.serialize_element(&l)?;
+            tup.serialize_element(&self.to_affine().unwrap())?;
+            tup.end()
+        }
+    }
+}
 
-// impl<P: GroupParams> Decodable for G<P> {
-//     fn decode<S: Decoder>(s: &mut S) -> Result<G<P>, S::Error> {
-//         let l = u8::decode(s)?;
-//         if l == 0 {
-//             Ok(G::zero())
-//         } else if l == 4 {
-//             Ok(AffineG::decode(s)?.to_jacobian())
-//         } else {
-//             Err(s.error("invalid leading byte for uncompressed group element"))
-//         }
-//     }
-// }
-//
-// impl<P: GroupParams> Decodable for AffineG<P> {
-//     fn decode<S: Decoder>(s: &mut S) -> Result<AffineG<P>, S::Error> {
-//         let x = P::Base::decode(s)?;
-//         let y = P::Base::decode(s)?;
-//
-//         // y^2 = x^3 + b
-//         if y.squared() == (x.squared() * x) + P::coeff_b() {
-//             if P::check_order() {
-//                 let p: G<P> = G {
-//                     x: x,
-//                     y: y,
-//                     z: P::Base::one()
-//                 };
-//
-//                 if (p * (-Fr::one())) + p != G::zero() {
-//                     return Err(s.error("point is not in the subgroup"))
-//                 }
-//             }
-//
-//             Ok(AffineG {
-//                 x: x,
-//                 y: y
-//             })
-//         } else {
-//             Err(s.error("point is not on the curve"))
-//         }
-//     }
-// }
+impl<'de, P: GroupParams> serde::Deserialize<'de> for G<P> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+        where
+            D: Deserializer<'de>
+    {
+        struct TupVisitor<P: GroupParams>(PhantomData<P>);
+
+        impl<P: GroupParams> Default for TupVisitor<P> {
+            fn default() -> Self {
+                TupVisitor(Default::default())
+            }
+        }
+
+        impl<'de, P: GroupParams> serde::de::Visitor<'de> for TupVisitor<P> {
+            type Value = G<P>;
+
+            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+                formatter.write_str("(u8, AffineG)")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<G<P>, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let l: u8 = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                if l == 0 {
+                    Ok(G::zero())
+                } else if l == 4 {
+                    let aff: AffineG<P> = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                    Ok(aff.to_jacobian())
+                } else {
+                    Err(V::Error::custom("invalid leading byte for uncompressed group element"))
+                }
+            }
+        }
+
+        let visitor: TupVisitor<P> = TupVisitor::default();
+        deserializer.deserialize_tuple(2, visitor)
+    }
+}
+
+impl<P: GroupParams> serde::Serialize for AffineG<P> {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
+        S: Serializer {
+        let mut affine_g = serializer.serialize_struct("AffineG", 2)?;
+        affine_g.serialize_field("x", &self.x)?;
+        affine_g.serialize_field("y", &self.y)?;
+        affine_g.end()
+    }
+}
+
+impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>
+    {
+        fn check_points<P: GroupParams>(x: P::Base, y: P::Base) -> Result<AffineG<P>, String>
+        {
+            // y^2 = x^3 + b
+            if y.squared() == (x.squared() * x) + P::coeff_b() {
+                if P::check_order() {
+                    let p: G<P> = G {
+                        x,
+                        y,
+                        z: P::Base::one()
+                    };
+
+                    if (p * (-Fr::one())) + p != G::zero() {
+                        return Err("point is not in the subgroup".to_string());
+                    }
+                }
+
+                Ok(AffineG {
+                    x,
+                    y,
+                })
+            } else {
+                Err("point is not on the curve".to_string())
+            }
+        }
+
+        #[derive(serde::Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field { X, Y }
+
+        struct AffineGVisitor<P>(PhantomData<P>);
+
+        impl<P: GroupParams> Default for AffineGVisitor<P> {
+            fn default() -> Self {
+                AffineGVisitor(Default::default())
+            }
+        }
+
+        impl<'de, P: GroupParams> serde::de::Visitor<'de> for AffineGVisitor<P> {
+            type Value = AffineG<P>;
+
+            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+                formatter.write_str("struct AffineG")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<AffineG<P>, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let x: <P as GroupParams>::Base = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let y: <P as GroupParams>::Base = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+
+                check_points(x, y).map_err(V::Error::custom)
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<AffineG<P>, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut x = None;
+                let mut y = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::X => {
+                            if x.is_some() {
+                                return Err(serde::de::Error::duplicate_field("x"));
+                            }
+                            x = Some(map.next_value()?);
+                        }
+                        Field::Y => {
+                            if y.is_some() {
+                                return Err(serde::de::Error::duplicate_field("y"));
+                            }
+                            y = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let x = x.ok_or_else(|| serde::de::Error::missing_field("x"))?;
+                let y = y.ok_or_else(|| serde::de::Error::missing_field("y"))?;
+
+                check_points(x, y).map_err(V::Error::custom)
+            }
+        }
+
+        const FIELDS: &[&str] = &["x", "y"];
+        deserializer.deserialize_struct("AffineG", FIELDS, AffineGVisitor::default())
+    }
+}
 
 impl<P: GroupParams> GroupElement for G<P> {
     fn zero() -> Self {
