@@ -1,25 +1,25 @@
 use crate::arith::U256;
-use crate::fields::{const_fq, FieldElement, Fq, Fq12, Fq2, Fr, fq2_nonresidue};
-use rand::{Rng};
+use crate::fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr};
+use rand::Rng;
+use serde::de::{Error, MapAccess, SeqAccess};
+use serde::ser::{SerializeStruct, SerializeTuple};
+use serde::{Deserializer, Serializer};
 use std::fmt;
-use std::ops::{Add, Mul, Neg, Sub};
-use serde::{Serializer, Deserializer};
-use serde::ser::{SerializeTuple, SerializeStruct};
-use serde::de::{Error, SeqAccess, MapAccess};
 use std::fmt::Formatter;
 use std::marker::PhantomData;
+use std::ops::{Add, Mul, Neg, Sub};
 
 pub trait GroupElement:
-Sized
-+ Copy
-+ Clone
-+ PartialEq
-+ Eq
-+ fmt::Debug
-+ Add<Output = Self>
-+ Sub<Output = Self>
-+ Neg<Output = Self>
-+ Mul<Fr, Output = Self>
+    Sized
+    + Copy
+    + Clone
+    + PartialEq
+    + Eq
+    + fmt::Debug
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Neg<Output = Self>
+    + Mul<Fr, Output = Self>
 {
     fn zero() -> Self;
     fn one() -> Self;
@@ -148,8 +148,10 @@ impl<P: GroupParams> AffineG<P> {
 }
 
 impl<P: GroupParams> serde::Serialize for G<P> {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
-        S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
         if self.is_zero() {
             let l: u8 = 0;
             serializer.serialize_u8(l)
@@ -165,8 +167,8 @@ impl<P: GroupParams> serde::Serialize for G<P> {
 
 impl<'de, P: GroupParams> serde::Deserialize<'de> for G<P> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-        where
-            D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         struct TupVisitor<P: GroupParams>(PhantomData<P>);
 
@@ -184,17 +186,23 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for G<P> {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<G<P>, V::Error>
-                where
-                    V: SeqAccess<'de>,
+            where
+                V: SeqAccess<'de>,
             {
-                let l: u8 = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let l: u8 = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
                 if l == 0 {
                     Ok(G::zero())
                 } else if l == 4 {
-                    let aff: AffineG<P> = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                    let aff: AffineG<P> = seq
+                        .next_element()?
+                        .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
                     Ok(aff.to_jacobian())
                 } else {
-                    Err(V::Error::custom("invalid leading byte for uncompressed group element"))
+                    Err(V::Error::custom(
+                        "invalid leading byte for uncompressed group element",
+                    ))
                 }
             }
         }
@@ -205,8 +213,10 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for G<P> {
 }
 
 impl<P: GroupParams> serde::Serialize for AffineG<P> {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
-        S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
         let mut affine_g = serializer.serialize_struct("AffineG", 2)?;
         affine_g.serialize_field("x", &self.x)?;
         affine_g.serialize_field("y", &self.y)?;
@@ -216,18 +226,17 @@ impl<P: GroupParams> serde::Serialize for AffineG<P> {
 
 impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-        where
-            D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
-        fn check_points<P: GroupParams>(x: P::Base, y: P::Base) -> Result<AffineG<P>, String>
-        {
+        fn check_points<P: GroupParams>(x: P::Base, y: P::Base) -> Result<AffineG<P>, String> {
             // y^2 = x^3 + b
             if y.squared() == (x.squared() * x) + P::coeff_b() {
                 if P::check_order() {
                     let p: G<P> = G {
                         x,
                         y,
-                        z: P::Base::one()
+                        z: P::Base::one(),
                     };
 
                     if (p * (-Fr::one())) + p != G::zero() {
@@ -235,10 +244,7 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
                     }
                 }
 
-                Ok(AffineG {
-                    x,
-                    y,
-                })
+                Ok(AffineG { x, y })
             } else {
                 Err("point is not on the curve".to_string())
             }
@@ -246,7 +252,10 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
 
         #[derive(serde::Deserialize)]
         #[serde(field_identifier, rename_all = "lowercase")]
-        enum Field { X, Y }
+        enum Field {
+            X,
+            Y,
+        }
 
         struct AffineGVisitor<P>(PhantomData<P>);
 
@@ -264,18 +273,22 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<AffineG<P>, V::Error>
-                where
-                    V: SeqAccess<'de>,
+            where
+                V: SeqAccess<'de>,
             {
-                let x: <P as GroupParams>::Base = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
-                let y: <P as GroupParams>::Base = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                let x: <P as GroupParams>::Base = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let y: <P as GroupParams>::Base = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
 
                 check_points(x, y).map_err(V::Error::custom)
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<AffineG<P>, V::Error>
-                where
-                    V: MapAccess<'de>,
+            where
+                V: MapAccess<'de>,
             {
                 let mut x = None;
                 let mut y = None;
@@ -701,10 +714,7 @@ impl AffineG<G2Params> {
         coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q1));
         coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q2));
 
-        G2Precomp {
-            q: *self,
-            coeffs,
-        }
+        G2Precomp { q: *self, coeffs }
     }
 }
 
@@ -772,12 +782,12 @@ pub fn pairing(p: &G1, q: &G2) -> Fq12 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::GroupElement;
+    use super::*;
     use crate::fields::{FieldElement, Fr};
+    use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
     use std::str::FromStr;
-    use rand::rngs::StdRng;
 
     fn random_test_addition<G: GroupElement, R: Rng>(rng: &mut R) {
         for _ in 0..50 {
@@ -868,10 +878,8 @@ mod tests {
         assert!((G::one() * (-Fr::one()) + G::one()).is_zero());
 
         let seed: [u8; 32] = [
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x93, 0x4d,
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xed, 0xb2,
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5, 0x0d,
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xee, 0x67,
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x93, 0x4d, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xed, 0xb2,
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5, 0x0d, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xee, 0x67,
         ];
         let mut rng = StdRng::from_seed(seed);
 
@@ -921,13 +929,13 @@ mod tests {
 
         let g1 = G1::one()
             * Fr::from_str(
-            "18097487326282793650237947474982649264364522469319914492172746413872781676",
-        )
+                "18097487326282793650237947474982649264364522469319914492172746413872781676",
+            )
             .unwrap();
         let g2 = G2::one()
             * Fr::from_str(
-            "20390255904278144451778773028944684152769293537511418234311120800877067946",
-        )
+                "20390255904278144451778773028944684152769293537511418234311120800877067946",
+            )
             .unwrap();
 
         let g1_pre = g1.to_affine().unwrap();
@@ -950,16 +958,12 @@ mod tests {
         );
     }
 
-
-
-
-
     #[test]
     fn test_prepared_g2() {
         let g2 = G2::one()
             * Fr::from_str(
-            "20390255904278144451778773028944684152769293537511418234311120800877067946",
-        )
+                "20390255904278144451778773028944684152769293537511418234311120800877067946",
+            )
             .unwrap();
 
         let g2_p = g2.to_affine().unwrap().precompute();
@@ -1091,13 +1095,13 @@ mod tests {
 
         let g1 = G1::one()
             * Fr::from_str(
-            "18097487326282793650237947474982649264364522469319914492172746413872781676",
-        )
+                "18097487326282793650237947474982649264364522469319914492172746413872781676",
+            )
             .unwrap();
         let g2 = G2::one()
             * Fr::from_str(
-            "20390255904278144451778773028944684152769293537511418234311120800877067946",
-        )
+                "20390255904278144451778773028944684152769293537511418234311120800877067946",
+            )
             .unwrap();
 
         let gt = pairing(&g1, &g2);
@@ -1176,10 +1180,8 @@ mod tests {
     #[allow(clippy::many_single_char_names)]
     fn test_binlinearity() {
         let seed: [u8; 32] = [
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x93, 0x4d,
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xed, 0xb2,
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5, 0x0d,
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xee, 0x67,
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x93, 0x4d, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xed, 0xb2,
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5, 0x0d, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xee, 0x67,
         ];
         let mut rng = StdRng::from_seed(seed);
         for _ in 0..50 {

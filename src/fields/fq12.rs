@@ -305,10 +305,12 @@ impl FieldElement for Fq12 {
     }
 
     fn inverse(self) -> Option<Self> {
-        (self.c0.squared() - (self.c1.squared().mul_by_nonresidue())).inverse().map(|t| Fq12 {
-            c0: self.c0 * t,
-            c1: -(self.c1 * t),
-        })
+        (self.c0.squared() - (self.c1.squared().mul_by_nonresidue()))
+            .inverse()
+            .map(|t| Fq12 {
+                c0: self.c0 * t,
+                c1: -(self.c1 * t),
+            })
     }
 }
 

@@ -99,11 +99,7 @@ pub struct Fq6 {
 
 impl Fq6 {
     pub fn new(c0: Fq2, c1: Fq2, c2: Fq2) -> Self {
-        Fq6 {
-            c0,
-            c1,
-            c2,
-        }
+        Fq6 { c0, c1, c2 }
     }
 
     pub fn mul_by_nonresidue(&self) -> Self {
@@ -180,12 +176,13 @@ impl FieldElement for Fq6 {
         let c0 = self.c0.squared() - self.c1 * self.c2.mul_by_nonresidue();
         let c1 = self.c2.squared().mul_by_nonresidue() - self.c0 * self.c1;
         let c2 = self.c1.squared() - self.c0 * self.c2;
-        ((self.c2 * c1 + self.c1 * c2).mul_by_nonresidue() + self.c0 * c0).inverse().map(|t|
-            Fq6 {
+        ((self.c2 * c1 + self.c1 * c2).mul_by_nonresidue() + self.c0 * c0)
+            .inverse()
+            .map(|t| Fq6 {
                 c0: t * c0,
                 c1: t * c1,
                 c2: t * c2,
-        })
+            })
     }
 }
 

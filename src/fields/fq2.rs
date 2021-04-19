@@ -112,10 +112,12 @@ impl FieldElement for Fq2 {
         // "High-Speed Software Implementation of the Optimal Ate Pairing
         // over Barreto–Naehrig Curves"; Algorithm 8
 
-        (self.c0.squared() - (self.c1.squared() * fq_non_residue())).inverse().map(|t| Fq2 {
-            c0: self.c0 * t,
-            c1: -(self.c1 * t),
-        })
+        (self.c0.squared() - (self.c1.squared() * fq_non_residue()))
+            .inverse()
+            .map(|t| Fq2 {
+                c0: self.c0 * t,
+                c1: -(self.c1 * t),
+            })
     }
 }
 
