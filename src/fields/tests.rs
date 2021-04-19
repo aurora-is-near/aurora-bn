@@ -1,5 +1,6 @@
 use super::FieldElement;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 
 fn can_invert<F: FieldElement>() {
     let mut a = F::one();
@@ -114,13 +115,17 @@ pub fn field_trials<F: FieldElement>() {
     assert_eq!(-F::one() + F::one(), F::zero());
     assert_eq!(F::zero() - F::zero(), F::zero());
 
-    // TODO: get hex from this seed and turn to bytes.
-    // let seed: [usize; 4] = [103245, 191922, 1293, 192103];
-    // let mut rng = StdRng::from_seed(&seed);
-    //
-    // rand_element_squaring::<F, StdRng>(&mut rng);
-    // rand_element_addition_and_negation::<F, StdRng>(&mut rng);
-    // rand_element_multiplication::<F, StdRng>(&mut rng);
-    // rand_element_inverse::<F, StdRng>(&mut rng);
-    // rand_element_eval::<F, StdRng>(&mut rng);
+    let seed: [u8; 32] = [
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x93, 0x4d,
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xed, 0xb2,
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5, 0x0d,
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xee, 0x67,
+    ];
+    let mut rng = StdRng::from_seed(seed);
+
+    rand_element_squaring::<F, StdRng>(&mut rng);
+    rand_element_addition_and_negation::<F, StdRng>(&mut rng);
+    rand_element_multiplication::<F, StdRng>(&mut rng);
+    rand_element_inverse::<F, StdRng>(&mut rng);
+    rand_element_eval::<F, StdRng>(&mut rng);
 }

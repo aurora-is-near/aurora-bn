@@ -774,7 +774,7 @@ pub fn pairing(p: &G1, q: &G2) -> Fq12 {
 mod tests {
     use super::*;
     use super::GroupElement;
-    use crate::fields::{FieldElement, Fr, fq2_nonresidue};
+    use crate::fields::{FieldElement, Fr};
     use rand::{Rng, SeedableRng};
     use std::str::FromStr;
     use rand::rngs::StdRng;
@@ -1173,6 +1173,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::many_single_char_names)]
     fn test_binlinearity() {
         let seed: [u8; 32] = [
             0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x93, 0x4d,
@@ -1181,7 +1182,7 @@ mod tests {
             0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xee, 0x67,
         ];
         let mut rng = StdRng::from_seed(seed);
-        for x in 0..50 {
+        for _ in 0..50 {
             let p = G1::random(&mut rng);
             let q = G2::random(&mut rng);
             let s = Fr::random(&mut rng);
