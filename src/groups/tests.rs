@@ -1,6 +1,7 @@
 use super::GroupElement;
 use crate::fields::{FieldElement, Fr};
 use rand::Rng;
+use std::str::FromStr;
 
 fn random_test_addition<G: GroupElement, R: Rng>(rng: &mut R) {
     for _ in 0..50 {

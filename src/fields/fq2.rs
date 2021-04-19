@@ -1,4 +1,3 @@
-use crate::arith::{U256, U512};
 use crate::fields::{const_fq, FieldElement, Fq};
 use rand::Rng;
 use std::ops::{Add, Mul, Neg, Sub};
@@ -42,7 +41,7 @@ pub struct Fq2 {
 
 impl Fq2 {
     pub fn new(c0: Fq, c1: Fq) -> Self {
-        Fq2 { c0: c0, c1: c1 }
+        Fq2 { c0, c1 }
     }
 
     pub fn scale(&self, by: Fq) -> Self {
@@ -113,13 +112,10 @@ impl FieldElement for Fq2 {
         // "High-Speed Software Implementation of the Optimal Ate Pairing
         // over Barreto–Naehrig Curves"; Algorithm 8
 
-        match (self.c0.squared() - (self.c1.squared() * fq_non_residue())).inverse() {
-            Some(t) => Some(Fq2 {
-                c0: self.c0 * t,
-                c1: -(self.c1 * t),
-            }),
-            None => None,
-        }
+        (self.c0.squared() - (self.c1.squared() * fq_non_residue())).inverse().map(|t| Fq2 {
+            c0: self.c0 * t,
+            c1: -(self.c1 * t),
+        })
     }
 }
 

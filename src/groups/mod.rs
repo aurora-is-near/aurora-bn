@@ -1,9 +1,10 @@
 use crate::arith::U256;
 use crate::fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr};
-use rand::rngs::StdRng;
 use rand::Rng;
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
+#[cfg(test)]
+use std::str::FromStr;
 
 pub trait GroupElement:
     Sized
@@ -107,7 +108,7 @@ impl<P: GroupParams> PartialEq for G<P> {
             return false;
         }
 
-        return true;
+        true
     }
 }
 impl<P: GroupParams> Eq for G<P> {}
@@ -228,6 +229,7 @@ impl<P: GroupParams> GroupElement for G<P> {
         self.z.is_zero()
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn double(&self) -> Self {
         let a = self.x.squared();
         let b = self.y.squared();
@@ -276,6 +278,7 @@ impl<P: GroupParams> Mul<Fr> for G<P> {
 impl<P: GroupParams> Add<G<P>> for G<P> {
     type Output = G<P>;
 
+    #[allow(clippy::many_single_char_names)]
     fn add(self, other: G<P>) -> G<P> {
         if self.is_zero() {
             return other;
@@ -673,12 +676,13 @@ impl AffineG<G2Params> {
 
         G2Precomp {
             q: *self,
-            coeffs: coeffs,
+            coeffs,
         }
     }
 }
 
 impl G2 {
+    #[allow(clippy::many_single_char_names)]
     fn mixed_addition_step_for_flipped_miller_loop(
         &mut self,
         base: &AffineG<G2Params>,
@@ -702,6 +706,7 @@ impl G2 {
         }
     }
 
+    #[allow(clippy::many_single_char_names)]
     fn doubling_step_for_flipped_miller_loop(&mut self) -> EllCoeffs {
         let a = (self.x * self.y).scale(two_inv());
         let b = self.y.squared();
@@ -958,8 +963,8 @@ fn test_reduced_pairing() {
 
 #[test]
 fn test_binlinearity() {
-    use rand::SeedableRng;
-    // TODO: get hex from this and turn into bytes.
+    // use rand::SeedableRng;
+    // // TODO: get hex from this and turn into bytes.
     // let seed: [u32; 4] = [103245, 191922, 1293, 192103];
     // let mut rng = StdRng::from_seed(&seed);
     //
@@ -986,9 +991,9 @@ fn test_binlinearity() {
 
 #[test]
 fn test_y_at_point_at_infinity() {
-    assert!(G1::zero().y == Fq::one());
-    assert!((-G1::zero()).y == Fq::one());
+    assert_eq!(G1::zero().y, Fq::one());
+    assert_eq!((-G1::zero()).y, Fq::one());
 
-    assert!(G2::zero().y == Fq2::one());
-    assert!((-G2::zero()).y == Fq2::one());
+    assert_eq!(G2::zero().y, Fq2::one());
+    assert_eq!((-G2::zero()).y, Fq2::one());
 }

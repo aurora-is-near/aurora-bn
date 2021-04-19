@@ -12,6 +12,8 @@ pub use self::fp::{const_fq, Fq, Fr};
 pub use self::fq12::Fq12;
 pub use self::fq2::{fq2_nonresidue, Fq2};
 pub use self::fq6::Fq6;
+#[cfg(test)]
+use std::str::FromStr;
 
 pub trait FieldElement:
     Sized
@@ -164,12 +166,12 @@ fn fq12_test_vector() {
 
     // Do a bunch of arbitrary stuff to the element
 
-    let mut next = start.clone();
+    let mut next = start;
     for _ in 0..100 {
         next = next * start;
     }
 
-    let cpy = next.clone();
+    let cpy = next;
 
     for _ in 0..10 {
         next = next.squared();

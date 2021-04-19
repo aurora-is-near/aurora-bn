@@ -1,6 +1,7 @@
 use super::FieldElement;
 use rand::Rng;
 use std::ops::{Add, Mul, Neg, Sub};
+use std::str::FromStr;
 
 use crate::arith::{U256, U512};
 
@@ -20,34 +21,6 @@ macro_rules! field_impl {
         }
 
         impl $name {
-            pub fn from_str(s: &str) -> Option<Self> {
-                let ints: Vec<_> = {
-                    let mut acc = Self::zero();
-                    (0..11)
-                        .map(|_| {
-                            let tmp = acc;
-                            acc = acc + Self::one();
-                            tmp
-                        })
-                        .collect()
-                };
-
-                let mut res = Self::zero();
-                for c in s.chars() {
-                    match c.to_digit(10) {
-                        Some(d) => {
-                            res = res * ints[10];
-                            res = res + ints[d as usize];
-                        }
-                        None => {
-                            return None;
-                        }
-                    }
-                }
-
-                Some(res)
-            }
-
             /// Converts a U256 to an Fp so long as it's below the modulus.
             pub fn new(mut a: U256) -> Option<Self> {
                 if a < U256($modulus) {
@@ -143,6 +116,38 @@ macro_rules! field_impl {
                 self.0.neg(&U256($modulus));
 
                 self
+            }
+        }
+
+        impl FromStr for $name {
+            type Err = ();
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                let ints: Vec<_> = {
+                    let mut acc = Self::zero();
+                    (0..11)
+                        .map(|_| {
+                            let tmp = acc;
+                            acc = acc + Self::one();
+                            tmp
+                        })
+                        .collect()
+                };
+
+                let mut res = Self::zero();
+                for c in s.chars() {
+                    match c.to_digit(10) {
+                        Some(d) => {
+                            res = res * ints[10];
+                            res = res + ints[d as usize];
+                        }
+                        None => {
+                            return Err(());
+                        }
+                    }
+                }
+
+                Ok(res)
             }
         }
     };

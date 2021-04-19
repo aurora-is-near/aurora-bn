@@ -1,7 +1,7 @@
 use rand::Rng;
 use std::cmp::Ordering;
 
-use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
+use byteorder::{BigEndian, ByteOrder};
 
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
@@ -98,14 +98,14 @@ impl Ord for U256 {
     #[inline]
     fn cmp(&self, other: &U256) -> Ordering {
         for (a, b) in self.0.iter().zip(other.0.iter()).rev() {
-            if *a < *b {
-                return Ordering::Less;
-            } else if *a > *b {
-                return Ordering::Greater;
+            match a.cmp(b) {
+                Ordering::Less => return Ordering::Less,
+                Ordering::Greater => return Ordering::Greater,
+                Ordering::Equal => continue,
             }
         }
 
-        return Ordering::Equal;
+        Ordering::Equal
     }
 }
 
@@ -286,7 +286,7 @@ impl<'a> Iterator for BitIterator<'a> {
 #[inline]
 fn div2(a: &mut [u64; 4]) {
     let mut t = a[3] << 63;
-    a[3] = a[3] >> 1;
+    a[3] >>= 1;
     let b = a[2] << 63;
     a[2] >>= 1;
     a[2] |= t;
@@ -334,7 +334,7 @@ fn adc(a: u64, b: u64, carry: &mut u64) -> u64 {
 fn add_nocarry(a: &mut [u64; 4], b: &[u64; 4]) {
     let mut carry = 0;
 
-    for (a, b) in a.into_iter().zip(b.iter()) {
+    for (a, b) in a.iter_mut().zip(b.iter()) {
         *a = adc(*a, *b, &mut carry);
     }
 
@@ -357,7 +357,7 @@ fn sub_noborrow(a: &mut [u64; 4], b: &[u64; 4]) {
 
     let mut borrow = 0;
 
-    for (a, b) in a.into_iter().zip(b.iter()) {
+    for (a, b) in a.iter_mut().zip(b.iter()) {
         *a = sbb(*a, *b, &mut borrow);
     }
 
