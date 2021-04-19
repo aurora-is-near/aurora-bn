@@ -1,6 +1,8 @@
-use crate::fields::{const_fq, FieldElement, Fq};
+use crate::{
+    fields::{const_fq, FieldElement, Fq},
+    prelude::*,
+};
 use rand::Rng;
-use std::ops::{Add, Mul, Neg, Sub};
 
 #[inline]
 fn fq_non_residue() -> Fq {

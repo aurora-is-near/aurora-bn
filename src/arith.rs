@@ -1,7 +1,6 @@
-use rand::Rng;
-use std::cmp::Ordering;
-
+use crate::prelude::*;
 use byteorder::{BigEndian, ByteOrder};
+use rand::Rng;
 
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.

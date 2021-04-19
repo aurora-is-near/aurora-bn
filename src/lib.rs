@@ -1,13 +1,25 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), feature(core_intrinsics))]
+#![cfg_attr(not(feature = "std"), feature(alloc_error_handler))]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+#[cfg(not(feature = "std"))]
+extern crate core;
+
 pub mod arith;
 mod fields;
 mod groups;
+pub mod prelude;
 
 use fields::FieldElement;
 use groups::GroupElement;
 
+use core::{
+    ops::{Add, Mul, Neg, Sub},
+    str::FromStr,
+};
 use rand::Rng;
-use std::ops::{Add, Mul, Neg, Sub};
-use std::str::FromStr;
 
 #[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
@@ -263,6 +275,7 @@ pub fn pairing(p: G1, q: G2) -> Gt {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prelude::{String, Vec};
 
     pub fn into_hex<S: serde::Serialize>(obj: S) -> Option<String> {
         bincode::serialize(&obj).ok().map(hex::encode)

@@ -1,13 +1,14 @@
-use crate::arith::U256;
-use crate::fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr};
+use crate::{
+    arith::U256,
+    fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr},
+    prelude::*,
+};
 use rand::Rng;
-use serde::de::{Error, MapAccess, SeqAccess};
-use serde::ser::{SerializeStruct, SerializeTuple};
-use serde::{Deserializer, Serializer};
-use std::fmt;
-use std::fmt::Formatter;
-use std::marker::PhantomData;
-use std::ops::{Add, Mul, Neg, Sub};
+use serde::{
+    de::{Error, MapAccess, SeqAccess},
+    ser::{SerializeStruct, SerializeTuple},
+    Deserializer, Serializer,
+};
 
 pub trait GroupElement:
     Sized
@@ -782,12 +783,9 @@ pub fn pairing(p: &G1, q: &G2) -> Fq12 {
 
 #[cfg(test)]
 mod tests {
-    use super::GroupElement;
-    use super::*;
+    use super::{GroupElement, *};
     use crate::fields::{FieldElement, Fr};
-    use rand::rngs::StdRng;
-    use rand::{Rng, SeedableRng};
-    use std::str::FromStr;
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     fn random_test_addition<G: GroupElement, R: Rng>(rng: &mut R) {
         for _ in 0..50 {

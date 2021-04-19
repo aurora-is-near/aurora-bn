@@ -3,15 +3,15 @@ mod fq12;
 mod fq2;
 mod fq6;
 
-use crate::arith::U256;
+use crate::{arith::U256, prelude::*};
 use rand::Rng;
-use std::fmt::Debug;
-use std::ops::{Add, Mul, Neg, Sub};
 
-pub use self::fp::{const_fq, Fq, Fr};
-pub use self::fq12::Fq12;
-pub use self::fq2::{fq2_nonresidue, Fq2};
-pub use self::fq6::Fq6;
+pub use self::{
+    fp::{const_fq, Fq, Fr},
+    fq12::Fq12,
+    fq2::{fq2_nonresidue, Fq2},
+    fq6::Fq6,
+};
 #[cfg(test)]
 use std::str::FromStr;
 
@@ -25,7 +25,7 @@ pub trait FieldElement:
     + Neg<Output = Self>
     + PartialEq
     + Eq
-    + Debug
+    + fmt::Debug
 {
     fn zero() -> Self;
     fn one() -> Self;
