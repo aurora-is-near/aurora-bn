@@ -94,67 +94,6 @@ impl U512 {
     }
 }
 
-// impl Encodable for U512 {
-//     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-//         let mut buf = [0; (8 * 8)];
-//
-//         for (l, i) in (0..8).rev().zip((0..8).map(|i| i * 8)) {
-//             BigEndian::write_u64(&mut buf[i..], self.0[l]);
-//         }
-//
-//         for i in 0..(8 * 8) {
-//             s.emit_u8(buf[i])?;
-//         }
-//
-//         Ok(())
-//     }
-// }
-//
-// impl Decodable for U512 {
-//     fn decode<S: Decoder>(s: &mut S) -> Result<U512, S::Error> {
-//         let mut buf = [0; (8 * 8)];
-//
-//         for i in 0..(8 * 8) {
-//             buf[i] = s.read_u8()?;
-//         }
-//
-//         Ok(U512::interpret(&buf))
-//     }
-// }
-
-// impl Encodable for U256 {
-//     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-//         let mut buf = [0; (4 * 8)];
-//
-//         for (l, i) in (0..4).rev().zip((0..4).map(|i| i * 8)) {
-//             BigEndian::write_u64(&mut buf[i..], self.0[l]);
-//         }
-//
-//         for i in 0..(4 * 8) {
-//             s.emit_u8(buf[i])?;
-//         }
-//
-//         Ok(())
-//     }
-// }
-//
-// impl Decodable for U256 {
-//     fn decode<S: Decoder>(s: &mut S) -> Result<U256, S::Error> {
-//         let mut buf = [0; (4 * 8)];
-//
-//         for i in 0..(4 * 8) {
-//             buf[i] = s.read_u8()?;
-//         }
-//
-//         let mut n = [0; 4];
-//         for (l, i) in (0..4).rev().zip((0..4).map(|i| i * 8)) {
-//             n[l] = BigEndian::read_u64(&buf[i..]);
-//         }
-//
-//         Ok(U256(n))
-//     }
-// }
-
 impl Ord for U256 {
     #[inline]
     fn cmp(&self, other: &U256) -> Ordering {

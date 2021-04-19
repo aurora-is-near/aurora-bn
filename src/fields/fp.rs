@@ -19,20 +19,6 @@ macro_rules! field_impl {
             }
         }
 
-        // impl Encodable for $name {
-        //     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        //         let normalized = U256::from(*self);
-        //
-        //         normalized.encode(s)
-        //     }
-        // }
-        //
-        // impl Decodable for $name {
-        //     fn decode<S: Decoder>(s: &mut S) -> Result<$name, S::Error> {
-        //         $name::new(U256::decode(s)?).ok_or_else(|| s.error("integer is not less than modulus"))
-        //     }
-        // }
-
         impl $name {
             pub fn from_str(s: &str) -> Option<Self> {
                 let ints: Vec<_> = {

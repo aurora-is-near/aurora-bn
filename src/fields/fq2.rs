@@ -40,30 +40,6 @@ pub struct Fq2 {
     c1: Fq,
 }
 
-// impl Encodable for Fq2 {
-//     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-//         let c0: U256 = self.c0.into();
-//         let c1: U256 = self.c1.into();
-//
-//         U512::from(&c1, &c0, &Fq::modulus()).encode(s)
-//     }
-// }
-//
-// impl Decodable for Fq2 {
-//     fn decode<S: Decoder>(s: &mut S) -> Result<Fq2, S::Error> {
-//         let combined = U512::decode(s)?;
-//
-//         match combined.divrem(&Fq::modulus()) {
-//             (Some(c1), c0) => {
-//                 Ok(Fq2::new(Fq::new(c0).unwrap(), Fq::new(c1).unwrap()))
-//             },
-//             _ => {
-//                 Err(s.error("integer not less than modulus squared"))
-//             }
-//         }
-//     }
-// }
-
 impl Fq2 {
     pub fn new(c0: Fq, c1: Fq) -> Self {
         Fq2 { c0: c0, c1: c1 }
