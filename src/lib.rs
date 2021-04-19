@@ -106,7 +106,7 @@ pub trait Group:
     fn normalize(&mut self);
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
 pub struct G1(groups::G1);
 
@@ -169,7 +169,7 @@ impl Mul<Fr> for G1 {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
 pub struct G2(groups::G2);
 
