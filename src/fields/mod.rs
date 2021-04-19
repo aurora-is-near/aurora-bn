@@ -49,6 +49,12 @@ pub trait FieldElement:
     }
 }
 
+#[derive(Debug)]
+pub enum FieldError {
+    InvalidMember,
+    InvalidEncoding,
+}
+
 #[cfg(test)]
 mod tests;
 

@@ -20,6 +20,7 @@ use core::{
     str::FromStr,
 };
 use rand::Rng;
+pub use crate::fields::FieldError;
 
 #[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
@@ -88,10 +89,92 @@ impl Mul for Fr {
 }
 
 impl FromStr for Fr {
-    type Err = ();
+    type Err = FieldError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Fr(fields::Fr::from_str(s)?))
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(C)]
+pub struct Fq(fields::Fq);
+
+impl Fq {
+    pub fn zero() -> Self {
+        Fq(fields::Fq::zero())
+    }
+
+    pub fn one() -> Self {
+        Fq(fields::Fq::one())
+    }
+
+    pub fn random<R: Rng>(rng: &mut R) -> Self {
+        Fq(fields::Fq::random(rng))
+    }
+
+    pub fn pow(&self, exp: Fq) -> Self {
+        Fq(self.0.pow(exp.0))
+    }
+
+    pub fn inverse(&self) -> Option<Self> {
+        self.0.inverse().map(Fq)
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+
+    pub fn interpret(buf: &[u8; 64]) -> Fq {
+        Fq(fields::Fq::interpret(buf))
+    }
+
+    pub fn from_u256(u256: arith::U256) -> Result<Self, FieldError> {
+        Ok(Fq(fields::Fq::new(u256)?))
+    }
+
+    pub fn into_u256(self) -> arith::U256 {
+        (self.0).into()
+    }
+}
+
+impl Add<Fq> for Fq {
+    type Output = Fq;
+
+    fn add(self, other: Fq) -> Fq {
+        Fq(self.0 + other.0)
+    }
+}
+
+impl Sub<Fq> for Fq {
+    type Output = Fq;
+
+    fn sub(self, other: Fq) -> Fq {
+        Fq(self.0 - other.0)
+    }
+}
+
+impl Neg for Fq {
+    type Output = Fq;
+
+    fn neg(self) -> Fq {
+        Fq(-self.0)
+    }
+}
+
+impl Mul for Fq {
+    type Output = Fq;
+
+    fn mul(self, other: Fq) -> Fq {
+        Fq(self.0 * other.0)
+    }
+}
+
+impl FromStr for Fq {
+    type Err = FieldError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Fq(fields::Fq::from_str(s)?))
     }
 }
 

@@ -1,4 +1,4 @@
-use super::FieldElement;
+use super::{FieldElement, FieldError};
 use crate::{
     arith::{U256, U512},
     prelude::*,
@@ -22,13 +22,13 @@ macro_rules! field_impl {
 
         impl $name {
             /// Converts a U256 to an Fp so long as it's below the modulus.
-            pub fn new(mut a: U256) -> Option<Self> {
+            pub fn new(mut a: U256) -> Result<Self, FieldError> {
                 if a < U256($modulus) {
                     a.mul(&U256($rsquared), &U256($modulus), $inv);
 
-                    Some($name(a))
+                    Ok($name(a))
                 } else {
-                    None
+                    Err(FieldError::InvalidMember)
                 }
             }
 
@@ -120,7 +120,7 @@ macro_rules! field_impl {
         }
 
         impl FromStr for $name {
-            type Err = ();
+            type Err = FieldError;
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 let ints: Vec<_> = {
@@ -142,7 +142,7 @@ macro_rules! field_impl {
                             res = res + ints[d as usize];
                         }
                         None => {
-                            return Err(());
+                            return Err(FieldError::InvalidEncoding);
                         }
                     }
                 }
