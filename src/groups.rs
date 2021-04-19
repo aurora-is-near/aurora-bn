@@ -1,5 +1,5 @@
 use crate::arith::U256;
-use crate::fields::{const_fq, FieldElement, Fq, Fq12, Fq2, Fr};
+use crate::fields::{const_fq, FieldElement, Fq, Fq12, Fq2, Fr, fq2_nonresidue};
 use rand::{Rng};
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
@@ -551,7 +551,224 @@ impl GroupParams for G2Params {
     }
 }
 
+#[inline]
+fn twist() -> Fq2 {
+    fq2_nonresidue()
+}
+
+#[inline]
+fn two_inv() -> Fq {
+    const_fq([
+        9781510331150239090,
+        15059239858463337189,
+        10331104244869713732,
+        2249375503248834476,
+    ])
+}
+
+#[inline]
+fn ate_loop_count() -> U256 {
+    U256([
+        0x9d797039be763ba8,
+        0x0000000000000001,
+        0x0000000000000000,
+        0x0000000000000000,
+    ])
+}
+
+#[inline]
+fn twist_mul_by_q_x() -> Fq2 {
+    Fq2::new(
+        const_fq([
+            13075984984163199792,
+            3782902503040509012,
+            8791150885551868305,
+            1825854335138010348,
+        ]),
+        const_fq([
+            7963664994991228759,
+            12257807996192067905,
+            13179524609921305146,
+            2767831111890561987,
+        ]),
+    )
+}
+
+#[inline]
+fn twist_mul_by_q_y() -> Fq2 {
+    Fq2::new(
+        const_fq([
+            16482010305593259561,
+            13488546290961988299,
+            3578621962720924518,
+            2681173117283399901,
+        ]),
+        const_fq([
+            11661927080404088775,
+            553939530661941723,
+            7860678177968807019,
+            3208568454732775116,
+        ]),
+    )
+}
+
 pub type G2 = G<G2Params>;
+
+#[derive(PartialEq, Eq)]
+pub struct EllCoeffs {
+    pub ell_0: Fq2,
+    pub ell_vw: Fq2,
+    pub ell_vv: Fq2,
+}
+
+#[derive(PartialEq, Eq)]
+pub struct G2Precomp {
+    pub q: AffineG<G2Params>,
+    pub coeffs: Vec<EllCoeffs>,
+}
+
+impl G2Precomp {
+    pub fn miller_loop(&self, g1: &AffineG<G1Params>) -> Fq12 {
+        let mut f = Fq12::one();
+
+        let mut idx = 0;
+
+        let mut found_one = false;
+
+        for i in ate_loop_count().bits() {
+            if !found_one {
+                // skips the first bit
+                found_one = i;
+                continue;
+            }
+
+            let c = &self.coeffs[idx];
+            idx += 1;
+            f = f
+                .squared()
+                .mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
+
+            if i {
+                let c = &self.coeffs[idx];
+                idx += 1;
+                f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
+            }
+        }
+
+        let c = &self.coeffs[idx];
+        idx += 1;
+        f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
+
+        let c = &self.coeffs[idx];
+        f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
+
+        f
+    }
+}
+
+impl AffineG<G2Params> {
+    fn mul_by_q(&self) -> Self {
+        AffineG {
+            x: twist_mul_by_q_x() * self.x.frobenius_map(1),
+            y: twist_mul_by_q_y() * self.y.frobenius_map(1),
+        }
+    }
+
+    pub fn precompute(&self) -> G2Precomp {
+        let mut r = self.to_jacobian();
+
+        let mut coeffs = Vec::with_capacity(102);
+
+        let mut found_one = false;
+
+        for i in ate_loop_count().bits() {
+            if !found_one {
+                // skips the first bit
+                found_one = i;
+                continue;
+            }
+
+            coeffs.push(r.doubling_step_for_flipped_miller_loop());
+
+            if i {
+                coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(self));
+            }
+        }
+
+        let q1 = self.mul_by_q();
+        let q2 = -(q1.mul_by_q());
+
+        coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q1));
+        coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q2));
+
+        G2Precomp {
+            q: *self,
+            coeffs,
+        }
+    }
+}
+
+impl G2 {
+    #[allow(clippy::many_single_char_names)]
+    fn mixed_addition_step_for_flipped_miller_loop(
+        &mut self,
+        base: &AffineG<G2Params>,
+    ) -> EllCoeffs {
+        let d = self.x - self.z * base.x;
+        let e = self.y - self.z * base.y;
+        let f = d.squared();
+        let g = e.squared();
+        let h = d * f;
+        let i = self.x * f;
+        let j = self.z * g + h - (i + i);
+
+        self.x = d * j;
+        self.y = e * (i - j) - h * self.y;
+        self.z = self.z * h;
+
+        EllCoeffs {
+            ell_0: twist() * (e * base.x - d * base.y),
+            ell_vv: e.neg(),
+            ell_vw: d,
+        }
+    }
+
+    #[allow(clippy::many_single_char_names)]
+    fn doubling_step_for_flipped_miller_loop(&mut self) -> EllCoeffs {
+        let a = (self.x * self.y).scale(two_inv());
+        let b = self.y.squared();
+        let c = self.z.squared();
+        let d = c + c + c;
+        let e = G2Params::coeff_b() * d;
+        let f = e + e + e;
+        let g = (b + f).scale(two_inv());
+        let h = (self.y + self.z).squared() - (b + c);
+        let i = e - b;
+        let j = self.x.squared();
+        let e_sq = e.squared();
+
+        self.x = a * (b - f);
+        self.y = g.squared() - (e_sq + e_sq + e_sq);
+        self.z = b * h;
+
+        EllCoeffs {
+            ell_0: twist() * i,
+            ell_vw: h.neg(),
+            ell_vv: j + j + j,
+        }
+    }
+}
+
+pub fn pairing(p: &G1, q: &G2) -> Fq12 {
+    match (p.to_affine(), q.to_affine()) {
+        (None, _) | (_, None) => Fq12::one(),
+        (Some(p), Some(q)) => q
+            .precompute()
+            .miller_loop(&p)
+            .final_exponentiation()
+            .expect("miller loop cannot produce zero"),
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -656,7 +873,7 @@ mod tests {
             0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5, 0x0d,
             0x0, 0x0, 0x0, 0x0, 0x0, 0x2, 0xee, 0x67,
         ];
-        let mut rng = StdRng::from_seed(&seed);
+        let mut rng = StdRng::from_seed(seed);
 
         random_test_addition::<G, _>(&mut rng);
         random_test_doubling::<G, _>(&mut rng);
@@ -733,211 +950,9 @@ mod tests {
         );
     }
 
-    #[inline]
-    fn twist() -> Fq2 {
-        fq2_nonresidue()
-    }
 
-    #[inline]
-    fn two_inv() -> Fq {
-        const_fq([
-            9781510331150239090,
-            15059239858463337189,
-            10331104244869713732,
-            2249375503248834476,
-        ])
-    }
 
-    #[inline]
-    fn ate_loop_count() -> U256 {
-        U256([
-            0x9d797039be763ba8,
-            0x0000000000000001,
-            0x0000000000000000,
-            0x0000000000000000,
-        ])
-    }
 
-    #[inline]
-    fn twist_mul_by_q_x() -> Fq2 {
-        Fq2::new(
-            const_fq([
-                13075984984163199792,
-                3782902503040509012,
-                8791150885551868305,
-                1825854335138010348,
-            ]),
-            const_fq([
-                7963664994991228759,
-                12257807996192067905,
-                13179524609921305146,
-                2767831111890561987,
-            ]),
-        )
-    }
-
-    #[inline]
-    fn twist_mul_by_q_y() -> Fq2 {
-        Fq2::new(
-            const_fq([
-                16482010305593259561,
-                13488546290961988299,
-                3578621962720924518,
-                2681173117283399901,
-            ]),
-            const_fq([
-                11661927080404088775,
-                553939530661941723,
-                7860678177968807019,
-                3208568454732775116,
-            ]),
-        )
-    }
-
-    #[derive(PartialEq, Eq)]
-    pub struct EllCoeffs {
-        pub ell_0: Fq2,
-        pub ell_vw: Fq2,
-        pub ell_vv: Fq2,
-    }
-
-    #[derive(PartialEq, Eq)]
-    pub struct G2Precomp {
-        pub q: AffineG<G2Params>,
-        pub coeffs: Vec<EllCoeffs>,
-    }
-
-    impl G2Precomp {
-        pub fn miller_loop(&self, g1: &AffineG<G1Params>) -> Fq12 {
-            let mut f = Fq12::one();
-
-            let mut idx = 0;
-
-            let mut found_one = false;
-
-            for i in ate_loop_count().bits() {
-                if !found_one {
-                    // skips the first bit
-                    found_one = i;
-                    continue;
-                }
-
-                let c = &self.coeffs[idx];
-                idx += 1;
-                f = f
-                    .squared()
-                    .mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
-
-                if i {
-                    let c = &self.coeffs[idx];
-                    idx += 1;
-                    f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
-                }
-            }
-
-            let c = &self.coeffs[idx];
-            idx += 1;
-            f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
-
-            let c = &self.coeffs[idx];
-            f = f.mul_by_024(c.ell_0, c.ell_vw.scale(g1.y), c.ell_vv.scale(g1.x));
-
-            f
-        }
-    }
-
-    impl AffineG<G2Params> {
-        fn mul_by_q(&self) -> Self {
-            AffineG {
-                x: twist_mul_by_q_x() * self.x.frobenius_map(1),
-                y: twist_mul_by_q_y() * self.y.frobenius_map(1),
-            }
-        }
-
-        pub fn precompute(&self) -> G2Precomp {
-            let mut r = self.to_jacobian();
-
-            let mut coeffs = Vec::with_capacity(102);
-
-            let mut found_one = false;
-
-            for i in ate_loop_count().bits() {
-                if !found_one {
-                    // skips the first bit
-                    found_one = i;
-                    continue;
-                }
-
-                coeffs.push(r.doubling_step_for_flipped_miller_loop());
-
-                if i {
-                    coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(self));
-                }
-            }
-
-            let q1 = self.mul_by_q();
-            let q2 = -(q1.mul_by_q());
-
-            coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q1));
-            coeffs.push(r.mixed_addition_step_for_flipped_miller_loop(&q2));
-
-            G2Precomp {
-                q: *self,
-                coeffs,
-            }
-        }
-    }
-
-    impl G2 {
-        #[allow(clippy::many_single_char_names)]
-        fn mixed_addition_step_for_flipped_miller_loop(
-            &mut self,
-            base: &AffineG<G2Params>,
-        ) -> EllCoeffs {
-            let d = self.x - self.z * base.x;
-            let e = self.y - self.z * base.y;
-            let f = d.squared();
-            let g = e.squared();
-            let h = d * f;
-            let i = self.x * f;
-            let j = self.z * g + h - (i + i);
-
-            self.x = d * j;
-            self.y = e * (i - j) - h * self.y;
-            self.z = self.z * h;
-
-            EllCoeffs {
-                ell_0: twist() * (e * base.x - d * base.y),
-                ell_vv: e.neg(),
-                ell_vw: d,
-            }
-        }
-
-        #[allow(clippy::many_single_char_names)]
-        fn doubling_step_for_flipped_miller_loop(&mut self) -> EllCoeffs {
-            let a = (self.x * self.y).scale(two_inv());
-            let b = self.y.squared();
-            let c = self.z.squared();
-            let d = c + c + c;
-            let e = G2Params::coeff_b() * d;
-            let f = e + e + e;
-            let g = (b + f).scale(two_inv());
-            let h = (self.y + self.z).squared() - (b + c);
-            let i = e - b;
-            let j = self.x.squared();
-            let e_sq = e.squared();
-
-            self.x = a * (b - f);
-            self.y = g.squared() - (e_sq + e_sq + e_sq);
-            self.z = b * h;
-
-            EllCoeffs {
-                ell_0: twist() * i,
-                ell_vw: h.neg(),
-                ell_vv: j + j + j,
-            }
-        }
-    }
 
     #[test]
     fn test_prepared_g2() {
@@ -1068,17 +1083,6 @@ mod tests {
 
         assert!(expected_g2_p == g2_p);
         assert!(expected_g2_p.coeffs.len() == 102);
-    }
-
-    pub fn pairing(p: &G1, q: &G2) -> Fq12 {
-        match (p.to_affine(), q.to_affine()) {
-            (None, _) | (_, None) => Fq12::one(),
-            (Some(p), Some(q)) => q
-                .precompute()
-                .miller_loop(&p)
-                .final_exponentiation()
-                .expect("miller loop cannot produce zero"),
-        }
     }
 
     #[test]
