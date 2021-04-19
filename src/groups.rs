@@ -10,16 +10,16 @@ use std::fmt::Formatter;
 use std::marker::PhantomData;
 
 pub trait GroupElement:
-    Sized
-    + Copy
-    + Clone
-    + PartialEq
-    + Eq
-    + fmt::Debug
-    + Add<Output = Self>
-    + Sub<Output = Self>
-    + Neg<Output = Self>
-    + Mul<Fr, Output = Self>
+Sized
++ Copy
++ Clone
++ PartialEq
++ Eq
++ fmt::Debug
++ Add<Output = Self>
++ Sub<Output = Self>
++ Neg<Output = Self>
++ Mul<Fr, Output = Self>
 {
     fn zero() -> Self;
     fn one() -> Self;
@@ -184,8 +184,8 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for G<P> {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<G<P>, V::Error>
-            where
-                V: SeqAccess<'de>,
+                where
+                    V: SeqAccess<'de>,
             {
                 let l: u8 = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
                 if l == 0 {
@@ -216,8 +216,8 @@ impl<P: GroupParams> serde::Serialize for AffineG<P> {
 
 impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>
+        where
+            D: Deserializer<'de>
     {
         fn check_points<P: GroupParams>(x: P::Base, y: P::Base) -> Result<AffineG<P>, String>
         {
@@ -264,8 +264,8 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<AffineG<P>, V::Error>
-            where
-                V: SeqAccess<'de>,
+                where
+                    V: SeqAccess<'de>,
             {
                 let x: <P as GroupParams>::Base = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
                 let y: <P as GroupParams>::Base = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
@@ -274,8 +274,8 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<AffineG<P>, V::Error>
-            where
-                V: MapAccess<'de>,
+                where
+                    V: MapAccess<'de>,
             {
                 let mut x = None;
                 let mut y = None;
