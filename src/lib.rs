@@ -67,6 +67,17 @@ impl Fr {
         let u256: arith::U256 = self.0.into();
         u256.to_big_endian()
     }
+
+    pub fn from_slice(slice: &[u8]) -> Result<Self, FieldError> {
+        let mut fr_words = [0u64; 4];
+        for (mut x, value) in fr_words.iter_mut().enumerate() {
+            let mut word: [u8; 8] = [0u8; 8];
+            x *= 8;
+            word.copy_from_slice(&slice[x..(x + 8)]);
+            *value = u64::from_be_bytes(word);
+        }
+        Ok(Fr(fields::Fr::new(arith::U256(fr_words))?))
+    }
 }
 
 impl Add<Fr> for Fr {
@@ -153,6 +164,17 @@ impl Fq {
     pub fn to_big_endian(self) -> [u8; 32] {
         let u256: arith::U256 = self.0.into();
         u256.to_big_endian()
+    }
+
+    pub fn from_slice(slice: &[u8]) -> Result<Self, FieldError> {
+        let mut fr_words = [0u64; 4];
+        for (mut x, value) in fr_words.iter_mut().enumerate() {
+            let mut word: [u8; 8] = [0u8; 8];
+            x *= 8;
+            word.copy_from_slice(&slice[x..(x + 8)]);
+            *value = u64::from_be_bytes(word);
+        }
+        Ok(Fq(fields::Fq::new(arith::U256(fr_words))?))
     }
 }
 
