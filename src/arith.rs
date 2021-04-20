@@ -84,23 +84,12 @@ impl U512 {
     }
 
     pub fn interpret(buf: &[u8; 64]) -> U512 {
-        let mut n = [0; 8];
+        let mut n = [0u64; 8];
         for (l, i) in (0..8).rev().zip((0..8).map(|i| i * 8)) {
             n[l] = BigEndian::read_u64(&buf[i..]);
         }
 
         U512(n)
-    }
-
-    pub fn from_slice(slice: &[u8]) -> Self {
-        let mut fr_words = [0u64; 8];
-        for (mut x, value) in fr_words.iter_mut().enumerate() {
-            let mut word: [u8; 8] = [0u8; 8];
-            x *= 8;
-            word.copy_from_slice(&slice[x..(x + 8)]);
-            *value = u64::from_be_bytes(word);
-        }
-        U512(fr_words)
     }
 }
 
@@ -282,15 +271,13 @@ impl U256 {
         buf
     }
 
-    pub fn from_slice(slice: &[u8]) -> Self {
-        let mut fr_words = [0u64; 4];
-        for (mut x, value) in fr_words.iter_mut().enumerate() {
-            let mut word: [u8; 8] = [0u8; 8];
-            x *= 8;
-            word.copy_from_slice(&slice[x..(x + 8)]);
-            *value = u64::from_be_bytes(word);
+    pub fn interpret(buf: &[u8; 32]) -> Self {
+        let mut n = [0u64; 4];
+        for (l, i) in (0..4).rev().zip((0..4).map(|i| i * 8)) {
+            n[l] = BigEndian::read_u64(&buf[i..]);
         }
-        U256(fr_words)
+
+        U256(n)
     }
 }
 

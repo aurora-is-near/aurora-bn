@@ -51,8 +51,8 @@ impl Fr {
         self.0.is_zero()
     }
 
-    pub fn interpret(buf: &[u8; 64]) -> Fr {
-        Fr(fields::Fr::interpret(buf))
+    pub fn interpret(buf: &[u8; 32]) -> Result<Self, FieldError> {
+        Ok(Fr(fields::Fr::new(arith::U256::interpret(buf))?))
     }
 
     pub fn from_u256(u256: arith::U256) -> Result<Self, FieldError> {
@@ -66,10 +66,6 @@ impl Fr {
     pub fn to_big_endian(self) -> [u8; 32] {
         let u256: arith::U256 = self.0.into();
         u256.to_big_endian()
-    }
-
-    pub fn from_slice(slice: &[u8]) -> Result<Self, FieldError> {
-        Ok(Fr(fields::Fr::new(arith::U256::from_slice(slice))?))
     }
 }
 
@@ -142,8 +138,8 @@ impl Fq {
         self.0.is_zero()
     }
 
-    pub fn interpret(buf: &[u8; 64]) -> Fq {
-        Fq(fields::Fq::interpret(buf))
+    pub fn interpret(buf: &[u8; 32]) -> Result<Self, FieldError> {
+        Ok(Fq(fields::Fq::new(arith::U256::interpret(buf))?))
     }
 
     pub fn from_u256(u256: arith::U256) -> Result<Self, FieldError> {
@@ -157,10 +153,6 @@ impl Fq {
     pub fn to_big_endian(self) -> [u8; 32] {
         let u256: arith::U256 = self.0.into();
         u256.to_big_endian()
-    }
-
-    pub fn from_slice(slice: &[u8]) -> Result<Self, FieldError> {
-        Ok(Fq(fields::Fq::new(arith::U256::from_slice(slice))?))
     }
 }
 
@@ -229,12 +221,13 @@ impl Fq2 {
         Fq2(self.0.pow(exp))
     }
 
-    pub fn from_slice(bytes: &[u8]) -> Result<Self, FieldError> {
-        let u512 = arith::U512::from_slice(bytes);
+    pub fn interpret(buf: &[u8; 64]) -> Result<Self, FieldError> {
+        let u512 = arith::U512::interpret(buf);
         let (res, c0) = u512.divrem(&fields::Fq::modulus());
         Ok(Fq2::new(
             Fq::from_u256(c0).map_err(|_| FieldError::InvalidMember)?,
-            Fq::from_u256(res.ok_or(FieldError::InvalidMember)?).map_err(|_| FieldError::InvalidMember)?
+            Fq::from_u256(res.ok_or(FieldError::InvalidMember)?)
+                .map_err(|_| FieldError::InvalidMember)?,
         ))
     }
 }
