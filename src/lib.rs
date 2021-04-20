@@ -22,7 +22,7 @@ use core::{
 };
 use rand::Rng;
 
-#[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
 pub struct Fr(fields::Fr);
 
@@ -53,6 +53,19 @@ impl Fr {
 
     pub fn interpret(buf: &[u8; 64]) -> Fr {
         Fr(fields::Fr::interpret(buf))
+    }
+
+    pub fn from_u256(u256: arith::U256) -> Result<Self, FieldError> {
+        Ok(Fr(fields::Fr::new(u256)?))
+    }
+
+    pub fn into_u256(self) -> arith::U256 {
+        self.0.into()
+    }
+
+    pub fn to_big_endian(self) -> [u8; 32] {
+        let u256: arith::U256 = self.0.into();
+        u256.to_big_endian()
     }
 }
 
