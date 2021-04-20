@@ -113,7 +113,7 @@ impl FromStr for Fr {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
 pub struct Fq(fields::Fq);
 
