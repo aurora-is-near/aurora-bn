@@ -260,6 +260,16 @@ impl U256 {
     pub fn bits(&self) -> BitIterator {
         BitIterator { int: &self, n: 256 }
     }
+
+    pub fn to_big_endian(&self) -> [u8; 32] {
+        let mut buf = [0u8; 32];
+
+        for (l, i) in (0..4).rev().zip((0..4).map(|i| i * 8)) {
+            BigEndian::write_u64(&mut buf[i..], self.0[l])
+        }
+
+        buf
+    }
 }
 
 pub struct BitIterator<'a> {
@@ -631,4 +641,22 @@ fn testing_divrem() {
         assert!(c1.unwrap() < modulo);
         assert!(c0 < modulo);
     }
+}
+
+#[test]
+fn to_big_endian() {
+    let u256 = U256([
+        0x43e1f593f0000001,
+        0x2833e84879b97091,
+        0xb85045b68181585d,
+        0x30644e72e131a029,
+    ]);
+    let expected = [
+        0x30, 0x64, 0x4e, 0x72, 0xe1, 0x31, 0xa0, 0x29, 0xb8, 0x50, 0x45, 0xb6, 0x81, 0x81, 0x58,
+        0x5d, 0x28, 0x33, 0xe8, 0x48, 0x79, 0xb9, 0x70, 0x91, 0x43, 0xe1, 0xf5, 0x93, 0xf0, 0x0,
+        0x0, 0x1,
+    ];
+    let res = u256.to_big_endian();
+
+    assert_eq!(res, expected);
 }

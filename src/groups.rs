@@ -281,7 +281,6 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
     where
         D: Deserializer<'de>,
     {
-
         #[derive(serde::Deserialize)]
         #[serde(field_identifier, rename_all = "lowercase")]
         enum Field {

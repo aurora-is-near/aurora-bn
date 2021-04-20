@@ -15,13 +15,12 @@ pub mod prelude;
 use fields::FieldElement;
 use groups::GroupElement;
 
+pub use crate::{fields::FieldError, groups::AffineGError};
 use core::{
     ops::{Add, Mul, Neg, Sub},
     str::FromStr,
 };
 use rand::Rng;
-pub use crate::fields::FieldError;
-pub use crate::groups::AffineGError;
 
 #[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
@@ -135,7 +134,12 @@ impl Fq {
     }
 
     pub fn into_u256(self) -> arith::U256 {
-        (self.0).into()
+        self.0.into()
+    }
+
+    pub fn to_big_endian(self) -> [u8; 32] {
+        let u256: arith::U256 = self.0.into();
+        u256.to_big_endian()
     }
 }
 
