@@ -499,6 +499,8 @@ impl<P: GroupParams> Sub<G<P>> for G<P> {
 #[derive(Debug)]
 pub struct G1Params;
 
+pub type G1 = G<G1Params>;
+
 impl GroupParams for G1Params {
     type Base = Fq;
 
@@ -529,10 +531,9 @@ impl GroupParams for G1Params {
     }
 }
 
-pub type G1 = G<G1Params>;
-
 pub type AffineG1 = AffineG<G1Params>;
 
+#[derive(Debug)]
 pub struct G2Params;
 
 impl GroupParams for G2Params {
@@ -597,6 +598,8 @@ impl GroupParams for G2Params {
         true
     }
 }
+
+pub type AffineG2 = AffineG<G2Params>;
 
 #[inline]
 fn twist() -> Fq2 {

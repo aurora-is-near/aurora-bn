@@ -292,6 +292,26 @@ impl From<AffineG1> for G1 {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[repr(C)]
+pub struct AffineG2(groups::AffineG2);
+
+impl AffineG2 {
+    pub fn new(x: Fq2, y: Fq2) -> Result<Self, AffineGError> {
+        Ok(AffineG2(groups::AffineG2::new(x.0, y.0)?))
+    }
+
+    pub fn from_jacobian(g2: G2) -> Option<Self> {
+        g2.0.to_affine().map(AffineG2)
+    }
+}
+
+impl From<AffineG2> for G2 {
+    fn from(affine: AffineG2) -> Self {
+        G2(affine.0.to_jacobian())
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[repr(C)]
 pub struct G1(groups::G1);
 
 impl Group for G1 {
