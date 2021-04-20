@@ -91,6 +91,17 @@ impl U512 {
 
         U512(n)
     }
+
+    pub fn from_slice(slice: &[u8]) -> Self {
+        let mut fr_words = [0u64; 8];
+        for (mut x, value) in fr_words.iter_mut().enumerate() {
+            let mut word: [u8; 8] = [0u8; 8];
+            x *= 8;
+            word.copy_from_slice(&slice[x..(x + 8)]);
+            *value = u64::from_be_bytes(word);
+        }
+        U512(fr_words)
+    }
 }
 
 impl Ord for U256 {
@@ -269,6 +280,17 @@ impl U256 {
         }
 
         buf
+    }
+
+    pub fn from_slice(slice: &[u8]) -> Self {
+        let mut fr_words = [0u64; 4];
+        for (mut x, value) in fr_words.iter_mut().enumerate() {
+            let mut word: [u8; 8] = [0u8; 8];
+            x *= 8;
+            word.copy_from_slice(&slice[x..(x + 8)]);
+            *value = u64::from_be_bytes(word);
+        }
+        U256(fr_words)
     }
 }
 
