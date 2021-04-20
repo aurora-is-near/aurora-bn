@@ -204,6 +204,41 @@ impl FromStr for Fq {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(C)]
+pub struct Fq2(fields::Fq2);
+
+impl Fq2 {
+    pub fn new(a: Fq, b: Fq) -> Fq2 {
+        Fq2(fields::Fq2::new(a.0, b.0))
+    }
+
+    pub fn one() -> Fq2 {
+        Fq2(fields::Fq2::one())
+    }
+
+    pub fn zero() -> Fq2 {
+        Fq2(fields::Fq2::zero())
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+
+    pub fn pow(&self, exp: arith::U256) -> Self {
+        Fq2(self.0.pow(exp))
+    }
+
+    pub fn from_slice(bytes: &[u8]) -> Result<Self, FieldError> {
+        let u512 = arith::U512::from_slice(bytes);
+        let (res, c0) = u512.divrem(&fields::Fq::modulus());
+        Ok(Fq2::new(
+            Fq::from_u256(c0).map_err(|_| FieldError::InvalidMember)?,
+            Fq::from_u256(res.ok_or(FieldError::InvalidMember)?).map_err(|_| FieldError::InvalidMember)?
+        ))
+    }
+}
+
 pub trait Group:
     serde::Serialize
     + serde::Deserialize<'static>
