@@ -3,13 +3,21 @@ use crate::{
     arith::{U256, U512},
     prelude::*,
 };
+#[cfg(feature = "rand")]
 use rand::Rng;
 
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
-        #[derive(Copy, Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+        #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
+
+        #[cfg(not(feature = "serde"))]
+        impl crate::maybe_serde::Serialize for $name {}
+
+        #[cfg(not(feature = "serde"))]
+        impl crate::maybe_serde::DeserializeOwned for $name {}
 
         impl From<$name> for U256 {
             #[inline]
@@ -54,6 +62,7 @@ macro_rules! field_impl {
                 $name(U256($one))
             }
 
+            #[cfg(feature = "rand")]
             fn random<R: Rng>(rng: &mut R) -> Self {
                 $name(U256::random(rng, &U256($modulus)))
             }

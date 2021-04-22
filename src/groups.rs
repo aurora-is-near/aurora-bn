@@ -3,7 +3,9 @@ use crate::{
     fields::{const_fq, fq2_nonresidue, FieldElement, Fq, Fq12, Fq2, Fr},
     prelude::*,
 };
+#[cfg(feature = "rand")]
 use rand::Rng;
+#[cfg(feature = "serde")]
 use serde::{
     de::{Error, MapAccess, SeqAccess},
     ser::{SerializeStruct, SerializeTuple},
@@ -24,13 +26,14 @@ pub trait GroupElement:
 {
     fn zero() -> Self;
     fn one() -> Self;
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
     fn double(&self) -> Self;
 }
 
 pub trait GroupParams: Sized + 'static {
-    type Base: FieldElement + serde::Serialize + serde::de::DeserializeOwned;
+    type Base: FieldElement + crate::maybe_serde::Serialize + crate::maybe_serde::DeserializeOwned;
 
     fn name() -> &'static str;
     fn one() -> G<Self>;
@@ -199,6 +202,7 @@ impl<P: GroupParams> AffineG<P> {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<P: GroupParams> serde::Serialize for G<P> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -217,6 +221,7 @@ impl<P: GroupParams> serde::Serialize for G<P> {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de, P: GroupParams> serde::Deserialize<'de> for G<P> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
@@ -264,6 +269,7 @@ impl<'de, P: GroupParams> serde::Deserialize<'de> for G<P> {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<P: GroupParams> serde::Serialize for AffineG<P> {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
@@ -276,6 +282,7 @@ impl<P: GroupParams> serde::Serialize for AffineG<P> {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de, P: GroupParams> serde::Deserialize<'de> for AffineG<P> {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
@@ -364,6 +371,7 @@ impl<P: GroupParams> GroupElement for G<P> {
         P::one()
     }
 
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self {
         P::one() * Fr::random(rng)
     }

@@ -2,6 +2,7 @@ use crate::{
     fields::{const_fq, FieldElement, Fq, Fq2},
     prelude::*,
 };
+#[cfg(feature = "rand")]
 use rand::Rng;
 
 fn frobenius_coeffs_c1(n: usize) -> Fq2 {
@@ -146,6 +147,7 @@ impl FieldElement for Fq6 {
         }
     }
 
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self {
         Fq6 {
             c0: Fq2::random(rng),

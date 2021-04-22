@@ -1,16 +1,19 @@
 use crate::prelude::*;
 use byteorder::{BigEndian, ByteOrder};
+#[cfg(feature = "rand")]
 use rand::Rng;
 
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct U256(pub [u64; 4]);
 
 /// 512-bit, stack allocated biginteger for use in extension
 /// field serialization and scalar interpretation.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct U512(pub [u64; 8]);
 
@@ -42,6 +45,7 @@ impl U512 {
     }
 
     /// Get a random U512
+    #[cfg(feature = "rand")]
     pub fn random<R: Rng>(rng: &mut R) -> U512 {
         U512(rng.gen())
     }
@@ -127,6 +131,7 @@ impl U256 {
     }
 
     /// Produce a random number (mod `modulo`)
+    #[cfg(feature = "rand")]
     pub fn random<R: Rng>(rng: &mut R, modulo: &U256) -> U256 {
         U512::random(rng).divrem(modulo).1
     }

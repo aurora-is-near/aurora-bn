@@ -2,6 +2,7 @@ use crate::{
     fields::{const_fq, FieldElement, Fq},
     prelude::*,
 };
+#[cfg(feature = "rand")]
 use rand::Rng;
 
 #[inline]
@@ -34,12 +35,19 @@ pub fn fq2_nonresidue() -> Fq2 {
     )
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(crate::maybe_serde::Serialize, crate::maybe_serde::Deserialize))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct Fq2 {
     c0: Fq,
     c1: Fq,
 }
+
+#[cfg(not(feature = "serde"))]
+impl crate::maybe_serde::Serialize for Fq2 {}
+
+#[cfg(not(feature = "serde"))]
+impl crate::maybe_serde::DeserializeOwned for Fq2 {}
 
 impl Fq2 {
     pub fn new(c0: Fq, c1: Fq) -> Self {
@@ -84,6 +92,7 @@ impl FieldElement for Fq2 {
         }
     }
 
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self {
         Fq2 {
             c0: Fq::random(rng),

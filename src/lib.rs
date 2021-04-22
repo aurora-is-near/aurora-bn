@@ -20,9 +20,24 @@ use core::{
     ops::{Add, Mul, Neg, Sub},
     str::FromStr,
 };
+#[cfg(feature = "rand")]
 use rand::Rng;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub(crate) mod maybe_serde {
+    #[cfg(feature = "serde")]
+    pub use serde::{Serialize, Deserialize, de::DeserializeOwned};
+    #[cfg(not(feature = "serde"))]
+    pub trait Serialize {}
+
+    #[cfg(not(feature = "serde"))]
+    pub trait Deserialize {}
+
+    #[cfg(not(feature = "serde"))]
+    pub trait DeserializeOwned {}
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Fr(fields::Fr);
 
@@ -35,6 +50,7 @@ impl Fr {
         Fr(fields::Fr::one())
     }
 
+    #[cfg(feature = "rand")]
     pub fn random<R: Rng>(rng: &mut R) -> Self {
         Fr(fields::Fr::random(rng))
     }
@@ -109,7 +125,8 @@ impl FromStr for Fr {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Fq(fields::Fq);
 
@@ -122,6 +139,7 @@ impl Fq {
         Fq(fields::Fq::one())
     }
 
+    #[cfg(feature = "rand")]
     pub fn random<R: Rng>(rng: &mut R) -> Self {
         Fq(fields::Fq::random(rng))
     }
@@ -233,8 +251,8 @@ impl Fq2 {
 }
 
 pub trait Group:
-    serde::Serialize
-    + serde::Deserialize<'static>
+    crate::maybe_serde::Serialize
+    + crate::maybe_serde::DeserializeOwned
     + 'static
     + Send
     + Sync
@@ -250,12 +268,14 @@ pub trait Group:
 {
     fn zero() -> Self;
     fn one() -> Self;
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
     fn normalize(&mut self);
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct AffineG1(groups::AffineG1);
 
@@ -283,7 +303,8 @@ impl From<AffineG1> for G1 {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct AffineG2(groups::AffineG2);
 
@@ -303,9 +324,16 @@ impl From<AffineG2> for G2 {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct G1(groups::G1);
+
+#[cfg(not(feature = "serde"))]
+impl crate::maybe_serde::Serialize for G1 {}
+
+#[cfg(not(feature = "serde"))]
+impl crate::maybe_serde::DeserializeOwned for G1 {}
 
 impl Group for G1 {
     fn zero() -> Self {
@@ -316,6 +344,7 @@ impl Group for G1 {
         G1(groups::G1::one())
     }
 
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self {
         G1(groups::G1::random(rng))
     }
@@ -366,9 +395,16 @@ impl Mul<Fr> for G1 {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct G2(groups::G2);
+
+#[cfg(not(feature = "serde"))]
+impl crate::maybe_serde::Serialize for G2 {}
+
+#[cfg(not(feature = "serde"))]
+impl crate::maybe_serde::DeserializeOwned for G2 {}
 
 impl Group for G2 {
     fn zero() -> Self {
@@ -379,6 +415,7 @@ impl Group for G2 {
         G2(groups::G2::one())
     }
 
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self {
         G2(groups::G2::random(rng))
     }

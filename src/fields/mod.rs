@@ -4,6 +4,7 @@ mod fq2;
 mod fq6;
 
 use crate::{arith::U256, prelude::*};
+#[cfg(feature = "rand")]
 use rand::Rng;
 
 pub use self::{
@@ -29,6 +30,7 @@ pub trait FieldElement:
 {
     fn zero() -> Self;
     fn one() -> Self;
+    #[cfg(feature = "rand")]
     fn random<R: Rng>(rng: &mut R) -> Self;
     fn is_zero(&self) -> bool;
     fn squared(&self) -> Self {
