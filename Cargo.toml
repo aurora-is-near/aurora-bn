@@ -17,13 +17,13 @@ edition = "2018"
 name = "api"
 
 [features]
-default = ["std"]
+default = ["std", "rand"]
 std = ["serde/std", "rand/std", "byteorder/std"]
 
 [dependencies]
-byteorder = { version = "1.3.4", default-features = true }
-rand = { version = "0.8", default-features = true }
-serde = { version = "1.0", default-features = true, features = ["derive"] }
+byteorder = { version = "1.3.4", default-features = false }
+rand = { version = "0.8", default-features = false, features = ["std_rng"], optional = true }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
 hex = "0.4"
