@@ -27,6 +27,7 @@ serde = { version = "1.0", default-features = false, features = ["derive"] }
 
 [target."cfg(all(target_arch = \"wasm32\", target_os = \"unknown\"))".dependencies.getrandom]
 version = "0.2.2"
+default-features = false
 features = ["js"]
 
 [dev-dependencies]
