@@ -25,7 +25,7 @@ use rand::Rng;
 
 pub(crate) mod maybe_serde {
     #[cfg(feature = "serde")]
-    pub use serde::{Serialize, Deserialize, de::DeserializeOwned};
+    pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
     #[cfg(not(feature = "serde"))]
     pub trait Serialize {}
 
@@ -248,6 +248,14 @@ impl Fq2 {
                 .map_err(|_| FieldError::InvalidMember)?,
         ))
     }
+
+    pub fn re(&self) -> Fq {
+        Fq(self.0.re())
+    }
+
+    pub fn im(&self) -> Fq {
+        Fq(self.0.im())
+    }
 }
 
 pub trait Group:
@@ -311,6 +319,14 @@ pub struct AffineG2(groups::AffineG2);
 impl AffineG2 {
     pub fn new(x: Fq2, y: Fq2) -> Result<Self, AffineGError> {
         Ok(AffineG2(groups::AffineG2::new(x.0, y.0)?))
+    }
+
+    pub fn x(&self) -> Fq2 {
+        Fq2(*self.0.x())
+    }
+
+    pub fn y(&self) -> Fq2 {
+        Fq2(*self.0.y())
     }
 
     pub fn from_jacobian(g2: G2) -> Option<Self> {

@@ -35,7 +35,10 @@ pub fn fq2_nonresidue() -> Fq2 {
     )
 }
 
-#[cfg_attr(feature = "serde", derive(crate::maybe_serde::Serialize, crate::maybe_serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(crate::maybe_serde::Serialize, crate::maybe_serde::Deserialize)
+)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct Fq2 {
@@ -74,6 +77,16 @@ impl Fq2 {
                 c1: self.c1 * fq_non_residue(),
             }
         }
+    }
+
+    /// Real part
+    pub fn re(&self) -> Fq {
+        self.c0
+    }
+
+    /// Imaginary part
+    pub fn im(&self) -> Fq {
+        self.c1
     }
 }
 
